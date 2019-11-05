@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Login</title>
+    <link rel="stylesheet" href="./renderer/css/index/index.css">
+    <script src="./renderer/js/lib/axios.min.js"></script>
+    <script src="./renderer/js/lib/vue.min.js"></script>
+</head>
+  
+<body>
+    <main id="app">
+        <ul>
+            <li class="input-wrap">
+                <label for="">用户</label> <input type="text"  v-model="name"/>
+            </li>
+            <li class="input-wrap">
+                <label for="">密码</label> <input type="password" v-model="password" />
+            </li>
+            <li  class="input-wrap">
+               <button class="btn" @click="login">登录</button>
+            </li>
+        </ul>
+    </main>
+
+</body>
+<script>
+    const ipc = require("./renderer/ipc/ipc.js")
+    new Vue({
+        el: '#app',
+        data:function(){
+            return {
+                name:'',
+                password:''
+            }
+        },
+        created(){
+            
+        },
+        methods:{
+            login(){
+                console.log('登录成功')
+                ipc.login()
+            }
+        }
+
+    })
+
+</script>
+
+</html>

@@ -1,0 +1,72 @@
+@import '../base.css';
+.popup .main-content {
+  padding: 10px;
+  position: absolute;
+  width: 300px;
+  height: 200px;
+  top: 50%;
+  left: 50%;
+  margin-left: -150px;
+  margin-top: -150px;
+  background-color: #fff;
+  z-Index: 9999;
+  border-radius: 4px;
+  text-align: center;
+}
+.popup .main-content p.tip {
+  position: absolute;
+  top: 50px;
+  width: 100%;
+  text-align: center;
+}
+.popup .main-content .progress-bar {
+  position: relative;
+  top: 20px;
+}
+.popup .main-content .btn-box {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  text-align: center;
+  width: 100%;
+}
+.popup .main-content button.btn {
+  position: absolute;
+  width: 80px;
+  height: 40px;
+  font-size: 20px;
+  color: #fff;
+  background: green;
+  outline: none;
+  border: none;
+  border-radius: 4px;
+  bottom: 30px;
+  cursor: pointer;
+}
+.popup .main-content button.btn.cancel {
+  left: 50%;
+  transform: translate(-50%);
+}
+.popup .main-content button.btn.disabled {
+  background: #c0c0c0;
+  cursor: not-allowed;
+}
+.popup .main-content button.btn.left {
+  left: 20%;
+}
+.popup .main-content button.btn.right {
+  left: 55%;
+}
+.popup .mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.4);
+  filter: alpha(opacity=60);
+  /*设置透明度为60%*/
+  opacity: 0.6;
+  /*非IE浏览器下设置透明度为60%*/
+  z-Index: 999;
+}

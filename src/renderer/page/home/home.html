@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Home</title>
+    <link rel="stylesheet" href="../../css/upload/upload.css">
+    <link rel="stylesheet" href="../../css/common.css">
+    <script>
+        const SKYEE = require('../../js/common/skyee.js');
+        const sftp = require('../../utils/sftp.js');
+        const utils = require('../../utils/util.js');
+        const ipcRenderer = require('../../ipc/ipc.js');
+    </script>
+    <script src="../../js/lib/md5.js"></script>
+</head>
+
+<body>
+    <main id="app">
+        <div class="wrap">
+            <div class="menu">
+                <div class="back" @click="logout"><img src="../../image/back.png" alt=""></div>
+                <ul>
+                    <li :class="{'purple':tabIndex==0,'blue':tabIndex!=0}" @click="tabs(0)">更新固件</li>
+                    <li :class="{'purple':tabIndex==1,'blue':tabIndex!=1}" @click="tabs(1)">配置修改</li>
+                    <li class="gray" @click="tabs(2)">传感器数据</li>
+                </ul>
+            </div>
+            <div class="content">
+                <!-- <h3>pc客户端</h3> -->
+                <ul class="btn-wrap">
+                    <li class="upbtn" @click="openWin('BCU')">BCU固件更新</li>
+                    <li class="upbtn" @click="openWin('NCU')">NCU软件固件更新</li>
+                </ul>
+                <ul class="btn-wrap">
+
+                    <li class="upbtn" @click="getOfflineUpdateList">版本回退</li>
+                </ul>
+            </div>
+        </div>
+        <div v-show="isShow || isPopup || isShowVersionList" class="mask"></div>
+        <div v-show="isShow" class="modal" id="modal">
+            <div id="close" @click="closeModal(false)"><span>+</span></div>
+            <span class="title">上传{{type}}固件</span>
+            <div class="upload-area">
+                <input @change="testInfo($event)" type="file" multiple id="file">
+            </div>
+
+            <div class="modalbtnwarp">
+                <button class="modalbtn" @click="closeModal(true)">上传</button>
+                <button class="modalbtn" @click="closeModal(false)">取消</button>
+            </div>
+        </div>
+        <div class="popup" v-show="isPopup">
+            <div class="main-content">
+                <close class="close"></close>
+                <p v-show="updateStatusCode && uploadStatusCode=='uploaded'" class="tip" name="updateStatus">
+                    {{updateStatusCode | updateStatus}}</p>
+                <!-- 上传状态 -->
+                <p v-show="uploadStatusCode && !updateStatusCode" class="tip" name="uploadStatus">
+                    {{uploadStatusCode | uploadStatus}}</p>
+                <div class="progress-bar" v-show="uploadStatusCode =='uploading'">
+                    <img src="../../image/uploading.gif" alt="" srcset="">
+                </div>
+                <section class="btn-box">
+                    <button v-show="!updateStatusCode" @click="cancel('cancel')" class="btn cancel">取消</button>
+                    <button v-show="updateStatusCode=='0' || updateStatusCode=='-2'" @click="uploadOverNotify"
+                        class="btn cancel">升级</button>
+                    <button v-show="updateStatusCode=='1'" @click="goToReboot" class="btn left">重启</button>
+                    <button v-show="updateStatusCode=='1'" @click="cancel()" class="btn right">稍后重启</button>
+                </section>
+            </div>
+        </div>
+        <section v-show="isShowVersionList" class="main">
+            <ul class="title">
+                <li>BCU</li>
+                <li>NCU</li>
+            </ul>
+            <section class="list">
+                <ul class="bcu-list list left">
+                    <li :class="{'purple':version == b.version,'blue':version != b.version}"
+                        v-if="versionList && versionList.BCU.length>0" @click="saveVersionInfo('BCU',b.version)"
+                        v-for=" b, idx in versionList.BCU">
+                        <p class="version">{{b.version}}</p>
+                        <p class="publish_time">{{b.publish_time}}</p>
+                    </li>
+                </ul>
+                <ul class="ncu-list list">
+                    <li :class="{'purple':version == b.version,'blue':version != b.version}"
+                        v-if="versionList && versionList.NCU.length>0" @click="saveVersionInfo('NCU',b.version)"
+                        v-for=" b, idx in versionList.NCU">
+                        <p class="version">{{b.version}}</p>
+                        <p class="publish_time">{{b.publish_time}}</p>
+                    </li>
+                </ul>
+
+            </section>
+            <div class="btn-box">
+                <button class="btn cancel" @click="cancel()">取消</button>
+                <button class="btn update" @click="versionUpdate">升级</button>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>
+<script>
+
+    new SKYEE.Vue({
+        el: '#app',
+        data: function () {
+            return {
+                path: '',
+                name: '',
+                isShow: false,
+                isPopup: false,
+                isShowVersionList: false,
+                type: 'BCU',
+                version: '',
+                tabIndex: '0',
+                versionList: {
+                    "NCU": [
+                        {
+                            "version": "aaa",
+                            "publish_time": " 2018-9-27 17:40:30"
+
+                        }
+                    ],
+                    "BCU": [
+                        {
+                            "version": "bbb",
+                            "publish_time": " 2018-9-27 17:40:30"
+                        }
+                    ]
+                },
+                updateStatusCode: '',
+                uploadStatusCode: '',
+                isReboot: false,
+                BtnTxt: '取消',
+                btnContent: {
+                    update: '升级',
+                    confirm: '确定',
+                    upload: '上传',
+                    cancel: '取消'
+                }
+            }
+        },
+        filters: {
+            updateStatus: function (val) {
+                var msg;
+                switch (val) {
+                    case '0':
+                        msg = '空闲';
+                        break;
+                    case '#0':
+                        msg = '升级中';
+                        break;
+                    case '1':
+                        msg = '升级ok';
+                        break;
+                    case '-1':
+                        msg = '升级失败';
+                        break;
+                    case '-2':
+                        msg = '升级超时';
+                        break;
+                    default:
+                        msg = false;
+                        break;
+                }
+                return msg;
+            },
+            uploadStatus: function (val) {
+                var msg;
+                switch (val) {
+                    case 'uploading':
+                        msg = '文件上传中';
+                        break;
+                    case 'uploaded':
+                        msg = '文件上传完成';
+                        break;
+                    case 'error':
+                        msg = '文件上传出错';
+                        break;
+                    default:
+                        msg = false;
+                        break;
+                }
+                return msg;
+            }
+        },
+        created() { },
+        mounted() {
+            // this.getFileInfo();
+            utils.initFormat();
+        },
+        methods: {
+            logout() {
+                ipcRenderer.logout();
+            },
+            isShowBtn() {
+                return this.updateStatusCode == '#0' || this.updateStatusCode == '1' || this.updateStatusCode == '-1' || this.updateStatusCode == '-2';
+            },
+            testInfo(e) {
+                console.log(e, '=======================')
+                const file = e.target.files;
+                const _this = this;
+                _this.path = file[0].path
+                _this.name = file[0].name
+                utils.bmf.md5(file[0], function (err, md5) {
+                    utils.createFile(_this.getCreateFilePath() + 'md5.txt', md5);
+                });
+            },
+            getFileInfo() {
+                const fileDom = document.querySelector('#file');
+                const _this = this;
+                fileDom.onchange = function (e) {
+                    const file = e.target.files;
+                    if (file.length > 0) {
+                        _this.path = file[0].path
+                        _this.name = file[0].name
+                        console.log(_this.path)
+                        // 生成MD5文件.txt
+                        utils.bmf.md5(file[0], function (err, md5) {
+                            utils.createFile(_this.getCreateFilePath() + 'md5.txt', md5);
+                        });
+                        // version文件content
+                        const versionData = {
+                            publish_time: new Date().format(),
+                            version_name: _this.getVersionName(),
+                            url: ''
+                        }
+                        // 生成version文件.yaml
+                        utils.createFile(_this.getCreateFilePath() + 'version.yaml', JSON.stringify(versionData));
+
+                        // 把当前目录打包成zip文件
+                        utils.packageTozip(_this.getCreateFilePath(), file[0].name);
+                    }
+
+                }
+            },
+
+            getCreateFilePath() {
+                return this.path.replace(this.name, "")
+            },
+
+            closeModal(isUpload) {
+
+                SKYEE.axios.post('http://127.0.0.1:8000/xing/user/save', { name: "abc", password: "666", sno: "190713136133", major: "sz" }).then(function (resp) {
+                    console.log(resp, '----------------');
+                });
+
+                if (!this.path && isUpload) {
+                    alert('请选择要上传的文件');
+                    return;
+                }
+                this.isShow = false;
+                if (isUpload) {
+                    this.isPopup = true;
+                    const _this = this;
+                    sftp.put(this.path, `testFileUpload/${this.name}`, function (msg) {
+                        _this.uploadStatusCode = msg;
+                        if (msg == 'uploaded') {
+                            _this.uploadOverNotify();
+                        }
+                    })
+                }
+            },
+
+            getVersionName(version) {
+                const reg = /.zip$/gi;
+                var name;
+                if (this.name) {
+                    name = this.name.replace(reg, "");
+                }
+                if (version) {
+                    name = version
+                }
+                return name;
+            },
+
+            cancel(cancel) {
+                if (this.isPopup) {
+                    this.isPopup = false;
+                    this.uploadStatusCode = '';
+                }
+                if (this.isShowVersionList) {
+                    this.isShowVersionList = false;
+                }
+                this.cleanAll();
+                if (cancel) {
+
+                }
+            },
+
+            cleanAll() {
+                this.type = '';
+                this.version = '';
+            },
+
+            uploadOverNotify() {
+                if (this.uploadStatusCode != 'uploaded') return;
+                // this.cancel();
+                const _this = this;
+                console.log(this.getVersionName(), '====================version===============')
+                console.log(this.type, '====================type===============')
+                const url = `/robot/offline_update/upload_over_notify?version_name=${this.getVersionName()}&version_type =${this.type}`
+                // SKYEE.axios.get(url).then(function (resp) {
+                // console.log(resp.msg, '----------升级包OK!------------')
+                //     if (resp.successed) {
+
+                //     }
+                // })
+                _this.getUpdateResult();
+            },
+
+            getOfflineUpdateList() {
+                const _this = this;
+                _this.isShowVersionList = true;
+                console.log('-------获取versionlist successful---------')
+                // const url = '/robot/offline_update/version_list';
+                // SKYEE.axios.get(url).then(function (resp) {
+                //     if (resp.successed) {
+                //         _this.versionList = resp.version_list
+                //         _this.isShowVersionList = true;
+                //     }
+                // })
+            },
+
+            saveVersionInfo(type, version) {
+                this.type = type;
+                this.version = version;
+                console.log(type, '------------type----------------')
+                console.log(version, '------------version----------------')
+            },
+
+            versionUpdate() {
+                const _this = this;
+                // const url = `/robot/offline_update/version_update?version_name=${this.getVersionName(this.version)}&version_type =${this.type}`;
+                // SKYEE.axios.get(url).then(function (resp) {
+                //     if (resp.successed) {
+
+                //     }
+                // })
+            },
+
+            getUpdateResult() {
+                const _this = this;
+                const url = `/robot/offline_update/update_result`;
+                const timeId = setInterval(function () {
+
+
+                    // SKYEE.axios.get(url).then(function (resp) {
+                    //     if (resp.successed) {
+                    //         _this.statusCode = resp.result;
+                    //     }
+                    // })
+                    _this.updateStatusCode = '1';
+                    console.log('----------升级成功OK!------------')
+                    if (_this.updateStatusCode == '1' || this.updateStatusCode == '-1' || this.updateStatusCode == '-2') {
+                        clearInterval(timeId);
+                    }
+
+                }, 1000)
+
+            },
+
+            goToReboot() {
+                const _this = this;
+
+                // const url = `/robot/offline_update/isReboot?isReboot=true`;
+                // SKYEE.axios.get(url).then(function (resp) {
+                //     if (resp.successed) {
+
+                //     }
+                // })
+                console.log('重启中')
+            },
+
+            openWin(type) {
+                this.isShow = true;
+                this.type = type;
+            },
+
+            tabs(tabIndex) {
+                this.tabIndex = tabIndex;
+            }
+
+        }
+    })
+
+</script>

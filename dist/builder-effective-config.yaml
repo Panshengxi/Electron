@@ -1,0 +1,18 @@
+directories:
+  output: dist
+  buildResources: build
+productName: skyee
+appId: '123456'
+win:
+  icon: ./build/icons/icon.ico
+  artifactName: '${productName}_setup_${version}.${ext}'
+nsis:
+  oneClick: false
+  perMachine: true
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  runAfterFinish: true
+  installerIcon: ./build/icons/icon.ico
+  uninstallerIcon: ./build/icons/icon.ico
+electronVersion: 6.0.11

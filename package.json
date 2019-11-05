@@ -1,0 +1,48 @@
+{
+  "name": "skyee",
+  "version": "1.0.0",
+  "description": "this is a example",
+  "main": "./src/main.js",
+  "scripts": {
+    "build": "electron-builder --win --x64",
+    "start": "electron .",
+    "dev:main": "cross-env NODE_ENV='development' electron . -r babel-register ./",
+    "pro:main": "cross-env NODE_ENV='production' electron . -r babel-register ./"
+  },
+  "author": "lee",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-register": "^6.26.0",
+    "cross-env": "^5.2.0",
+    "electron": "^6.0.11",
+    "electron-builder": "^22.1.0"
+  },
+  "dependencies": {
+    "browser-md5-file": "^1.1.1",
+    "shelljs": "^0.8.3",
+    "ssh2-sftp-client": "^2.4.3",
+    "update-electron-app": "^1.5.0",
+    "zip-folder": "^1.0.0"
+  },
+  "build": {
+    "productName": "skyee",
+    "appId": "123456",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "./build/icons/icon.ico",
+      "artifactName": "${productName}_setup_${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true,
+      "installerIcon": "./build/icons/icon.ico",
+      "uninstallerIcon": "./build/icons/icon.ico"
+    }
+  }
+}
