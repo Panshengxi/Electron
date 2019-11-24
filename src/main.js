@@ -73,8 +73,6 @@ ipcMain.on('logout', (sys, msg) => {
     win.loadFile(`${__dirname}/index.html`)
 })
 
-// 实时检测更新
-require('update-electron-app')()
 
 
 

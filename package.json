@@ -1,10 +1,10 @@
 {
   "name": "skyee",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "description": "this is a example",
   "main": "./src/main.js",
   "scripts": {
-    "build": "electron-builder --win --x64",
+    "build": "electron-builder --win --ia32",
     "start": "electron .",
     "dev:main": "cross-env NODE_ENV='development' electron . -r babel-register ./",
     "pro:main": "cross-env NODE_ENV='production' electron . -r babel-register ./"
@@ -30,6 +30,12 @@
     "directories": {
       "output": "dist"
     },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "http://127.0.0.1/"
+      }
+  ],
     "win": {
       "icon": "./build/icons/icon.ico",
       "artifactName": "${productName}_setup_${version}.${ext}"
